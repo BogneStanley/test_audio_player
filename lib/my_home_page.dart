@@ -91,8 +91,9 @@ class _MyHomePageState extends State<MyHomePage> {
     if (Platform.isIOS) {
       // Sur iOS, utiliser permission_handler
       PermissionStatus status = await Permission.microphone.status;
-      if (status.isDenied) {
+      if (status.isDenied || status.isPermanentlyDenied) {
         status = await Permission.microphone.request();
+        print(status);
       }
       return status.isGranted;
     } else {
