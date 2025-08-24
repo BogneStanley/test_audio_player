@@ -1,0 +1,14 @@
+{
+    "configurations": [
+    {
+        "name": "Flutter",
+        "type": "dart",
+        "request": "launch",
+        "noDebug": true,
+        "program": "lib/main.dart",
+        "args": [
+            "--verbose",
+        ]
+    }
+    ]
+}
