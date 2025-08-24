@@ -22,17 +22,14 @@ class RecorderController {
     String extension;
     
     if (Platform.isIOS) {
-      // Configuration optimisée pour iOS
-      config = RecordConfig(
-        sampleRate: 44100,        // Fréquence d'échantillonnage standard
-        bitRate: 128000,          // Bitrate standard
-        encoder: AudioEncoder.aacLc, // Encodeur AAC compatible iOS
-        numChannels: 1,           // Mono pour éviter les problèmes de conversion
-        autoGain: true,           // Gain automatique
-        echoCancel: true,         // Annulation d'écho
-        noiseSuppress: true,      // Suppression de bruit
-      );
-      extension = 'm4a'; // Format M4A plus compatible iOS
+      // Utiliser la méthode alternative pour iOS
+      try {
+        await _initIOSRecording();
+        return; // Sortir directement si succès
+      } catch (e) {
+        print('Toutes les méthodes iOS ont échoué: $e');
+        rethrow;
+      }
     } else {
       // Configuration pour Android
       config = RecordConfig(
@@ -50,26 +47,109 @@ class RecorderController {
       await _recorder.start(config, path: _path);
       _state = RecorderState.recording;
       setState();
+      print('Enregistrement démarré avec succès: $_path');
     } catch (e) {
       print('Erreur lors du démarrage de l\'enregistrement: $e');
       // Fallback avec configuration minimale
       try {
+        print('Tentative avec configuration de fallback...');
         await _recorder.start(
           RecordConfig(
-            sampleRate: 44100,
-            bitRate: 64000,
+            sampleRate: 22050,    // Fréquence réduite
+            bitRate: 352800,      // Bitrate pour PCM 16-bit mono (22050 * 16 * 1)
             encoder: AudioEncoder.pcm16bits,
             numChannels: 1,
           ),
           path: _path.replaceAll('.$extension', '.wav'),
         );
+        _path = _path.replaceAll('.$extension', '.wav');
         _state = RecorderState.recording;
         setState();
+        print('Enregistrement démarré avec configuration de fallback: $_path');
       } catch (fallbackError) {
         print('Erreur avec la configuration de fallback: $fallbackError');
         rethrow;
       }
     }
+  }
+
+  // Méthode alternative pour iOS avec essais multiples
+  Future<void> _initIOSRecording() async {
+    final directory = await getApplicationDocumentsDirectory();
+    
+    // Liste des configurations à essayer sur iOS
+    final List<Map<String, dynamic>> configs = [
+      {
+        'sampleRate': 44100,
+        'bitRate': 705600,
+        'encoder': AudioEncoder.pcm16bits,
+        'extension': 'wav',
+        'description': 'PCM 16-bit 44.1kHz'
+      },
+      {
+        'sampleRate': 22050,
+        'bitRate': 352800,
+        'encoder': AudioEncoder.pcm16bits,
+        'extension': 'wav',
+        'description': 'PCM 16-bit 22.05kHz'
+      },
+      {
+        'sampleRate': 16000,
+        'bitRate': 256000,
+        'encoder': AudioEncoder.pcm16bits,
+        'extension': 'wav',
+        'description': 'PCM 16-bit 16kHz'
+      },
+      {
+        'sampleRate': 8000,
+        'bitRate': 128000,
+        'encoder': AudioEncoder.pcm16bits,
+        'extension': 'wav',
+        'description': 'PCM 16-bit 8kHz'
+      }
+    ];
+    
+    Exception? lastError;
+    
+    for (int i = 0; i < configs.length; i++) {
+      final config = configs[i];
+      try {
+        print('Essai ${i + 1}/${configs.length}: ${config['description']}');
+        
+        _path = '${directory.path}/${DateTime.now().millisecondsSinceEpoch}.${config['extension']}';
+        
+        final recordConfig = RecordConfig(
+          sampleRate: config['sampleRate'],
+          bitRate: config['bitRate'],
+          encoder: config['encoder'],
+          numChannels: 1,
+          autoGain: false,
+          echoCancel: false,
+          noiseSuppress: false,
+        );
+        
+        await _recorder.start(recordConfig, path: _path);
+        _state = RecorderState.recording;
+        setState();
+        print('Enregistrement démarré avec succès: ${config['description']}');
+        return; // Succès, sortir de la boucle
+        
+      } catch (e) {
+        lastError = e as Exception;
+        print('Échec avec ${config['description']}: $e');
+        
+        // Essayer de nettoyer avant le prochain essai
+        try {
+          await _recorder.dispose();
+          _recorder = AudioRecorder();
+        } catch (cleanupError) {
+          print('Erreur lors du nettoyage: $cleanupError');
+        }
+      }
+    }
+    
+    // Si toutes les configurations ont échoué
+    throw Exception('Toutes les configurations audio ont échoué. Dernière erreur: $lastError');
   }
 
   RecorderState get state => _state;

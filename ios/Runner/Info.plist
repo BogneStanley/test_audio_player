@@ -59,5 +59,11 @@
 	<string>AVAudioSessionCategoryPlayAndRecord</string>
 	<key>AVAudioSessionMode</key>
 	<string>AVAudioSessionModeDefault</string>
+	<key>AVAudioSessionCategoryOptions</key>
+	<array>
+		<string>AVAudioSessionCategoryOptionAllowBluetooth</string>
+		<string>AVAudioSessionCategoryOptionAllowBluetoothA2DP</string>
+		<string>AVAudioSessionCategoryOptionDefaultToSpeaker</string>
+	</array>
 </dict>
 </plist>
