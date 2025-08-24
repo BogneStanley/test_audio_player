@@ -91,15 +91,101 @@ class _MyHomePageState extends State<MyHomePage> {
     if (Platform.isIOS) {
       // Sur iOS, utiliser permission_handler
       PermissionStatus status = await Permission.microphone.status;
-      if (status.isDenied || status.isPermanentlyDenied) {
+      print('Status initial: $status');
+      
+      if (status.isDenied) {
         status = await Permission.microphone.request();
-        print(status);
+        print('Status après demande: $status');
       }
+      
+      if (status.isPermanentlyDenied) {
+        // La permission est refusée de manière permanente, rediriger vers les paramètres
+        bool shouldShowSettings = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Permission requise'),
+              content: Text(
+                'L\'accès au microphone est nécessaire pour enregistrer de l\'audio. '
+                'Veuillez l\'activer dans les paramètres de l\'application.'
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('Annuler'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text('Paramètres'),
+                ),
+              ],
+            );
+          },
+        ) ?? false;
+        
+        if (shouldShowSettings) {
+          await openAppSettings();
+          // Vérifier à nouveau la permission après le retour des paramètres
+          status = await Permission.microphone.status;
+          print('Status après retour des paramètres: $status');
+        }
+      }
+      
       return status.isGranted;
     } else {
       // Sur Android, utiliser record
       AudioRecorder recorder = AudioRecorder();
-      return await recorder.hasPermission();
+      bool hasPermission = await recorder.hasPermission();
+      
+      if (!hasPermission) {
+        // Essayer de demander la permission via permission_handler sur Android aussi
+        PermissionStatus status = await Permission.microphone.status;
+        print('Status Android: $status');
+        
+        if (status.isDenied) {
+          status = await Permission.microphone.request();
+          print('Status Android après demande: $status');
+        }
+        
+        if (status.isPermanentlyDenied) {
+          // La permission est refusée de manière permanente, rediriger vers les paramètres
+          bool shouldShowSettings = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('Permission requise'),
+                content: Text(
+                  'L\'accès au microphone est nécessaire pour enregistrer de l\'audio. '
+                  'Veuillez l\'activer dans les paramètres de l\'application.'
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text('Annuler'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: Text('Paramètres'),
+                  ),
+                ],
+              );
+            },
+          ) ?? false;
+          
+          if (shouldShowSettings) {
+            await openAppSettings();
+            // Vérifier à nouveau la permission après le retour des paramètres
+            status = await Permission.microphone.status;
+            print('Status Android après retour des paramètres: $status');
+          }
+        }
+        
+        hasPermission = status.isGranted;
+      }
+      
+      return hasPermission;
     }
   }
 }
