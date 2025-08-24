@@ -77,36 +77,137 @@ class RecorderController {
   Future<void> _initIOSRecording() async {
     final directory = await getApplicationDocumentsDirectory();
     
-    // Liste des configurations à essayer sur iOS
+    // Liste des configurations à essayer sur iOS - toutes les options disponibles
     final List<Map<String, dynamic>> configs = [
+      // Configurations PCM (les plus compatibles)
       {
         'sampleRate': 44100,
         'bitRate': 705600,
         'encoder': AudioEncoder.pcm16bits,
-        'extension': 'wav',
+        'extension': 'pcm',
         'description': 'PCM 16-bit 44.1kHz'
       },
       {
         'sampleRate': 22050,
         'bitRate': 352800,
         'encoder': AudioEncoder.pcm16bits,
-        'extension': 'wav',
+        'extension': 'pcm',
         'description': 'PCM 16-bit 22.05kHz'
       },
       {
         'sampleRate': 16000,
         'bitRate': 256000,
         'encoder': AudioEncoder.pcm16bits,
-        'extension': 'wav',
+        'extension': 'pcm',
         'description': 'PCM 16-bit 16kHz'
       },
       {
         'sampleRate': 8000,
         'bitRate': 128000,
         'encoder': AudioEncoder.pcm16bits,
-        'extension': 'wav',
+        'extension': 'pcm',
         'description': 'PCM 16-bit 8kHz'
-      }
+      },
+      
+      // Configuration WAV (Waveform Audio avec headers)
+      {
+        'sampleRate': 44100,
+        'bitRate': 705600,
+        'encoder': AudioEncoder.wav,
+        'extension': 'wav',
+        'description': 'WAV 44.1kHz'
+      },
+      {
+        'sampleRate': 22050,
+        'bitRate': 352800,
+        'encoder': AudioEncoder.wav,
+        'extension': 'wav',
+        'description': 'WAV 22.05kHz'
+      },
+      
+      // Configuration FLAC (Free Lossless Audio Codec)
+      {
+        'sampleRate': 44100,
+        'bitRate': 128000,
+        'encoder': AudioEncoder.flac,
+        'extension': 'flac',
+        'description': 'FLAC 44.1kHz'
+      },
+      {
+        'sampleRate': 22050,
+        'bitRate': 64000,
+        'encoder': AudioEncoder.flac,
+        'extension': 'flac',
+        'description': 'FLAC 22.05kHz'
+      },
+      
+      // Configuration Opus (très efficace, supporté sur iOS 11+)
+      {
+        'sampleRate': 48000,
+        'bitRate': 64000,
+        'encoder': AudioEncoder.opus,
+        'extension': 'opus',
+        'description': 'Opus 48kHz'
+      },
+      {
+        'sampleRate': 24000,
+        'bitRate': 32000,
+        'encoder': AudioEncoder.opus,
+        'extension': 'opus',
+        'description': 'Opus 24kHz'
+      },
+      
+      // Configuration AAC (essayer malgré les problèmes précédents)
+      {
+        'sampleRate': 44100,
+        'bitRate': 128000,
+        'encoder': AudioEncoder.aacLc,
+        'extension': 'm4a',
+        'description': 'AAC-LC 44.1kHz'
+      },
+      {
+        'sampleRate': 22050,
+        'bitRate': 64000,
+        'encoder': AudioEncoder.aacLc,
+        'extension': 'm4a',
+        'description': 'AAC-LC 22.05kHz'
+      },
+      
+      // Configuration AAC Enhanced Low Delay
+      {
+        'sampleRate': 44100,
+        'bitRate': 128000,
+        'encoder': AudioEncoder.aacEld,
+        'extension': 'm4a',
+        'description': 'AAC-ELD 44.1kHz'
+      },
+      
+      // Configuration AAC High Efficiency
+      {
+        'sampleRate': 44100,
+        'bitRate': 64000,
+        'encoder': AudioEncoder.aacHe,
+        'extension': 'm4a',
+        'description': 'AAC-HE 44.1kHz'
+      },
+      
+      // Configuration AMR Narrow Band (8kHz requis)
+      {
+        'sampleRate': 8000,
+        'bitRate': 12800,
+        'encoder': AudioEncoder.amrNb,
+        'extension': '3gp',
+        'description': 'AMR-NB 8kHz'
+      },
+      
+      // Configuration AMR Wide Band (16kHz requis)
+      {
+        'sampleRate': 16000,
+        'bitRate': 23800,
+        'encoder': AudioEncoder.amrWb,
+        'extension': '3gp',
+        'description': 'AMR-WB 16kHz'
+      },
     ];
     
     Exception? lastError;
@@ -131,8 +232,14 @@ class RecorderController {
         await _recorder.start(recordConfig, path: _path);
         _state = RecorderState.recording;
         setState();
-        print('Enregistrement démarré avec succès: ${config['description']}');
-        return; // Succès, sortir de la boucle
+        if (await _recorder.isRecording()) {
+          print('Enregistrement démarré avec succès: ${config['description']}');
+          print('Fichier: $_path');
+          return; // Succès, sortir de la boucle
+        } else {
+          print('Enregistrement échoué: ${config['description']}');
+          throw Exception('L\'enregistrement n\'a pas démarré');
+        }
         
       } catch (e) {
         lastError = e as Exception;
@@ -202,6 +309,7 @@ class AudioFile {
 
   AudioFile({required this.path, required this.size, required this.name, required this.extension,});
 
+
   factory AudioFile.fromPath(String path) {
     try {
       final file = File(path);
@@ -241,13 +349,17 @@ class AudioFile {
         return 'audio/wav';
       case 'mp3':
         return 'audio/mpeg';
+      case 'pcm':
+        return 'audio/pcm';
+      case 'flac':
+        return 'audio/flac';
+      case 'opus':
+        return 'audio/opus';
+      case '3gp':
+        return 'audio/3gpp';
       default:
         return 'audio/*';
     }
   }
-  
-  // Méthode pour vérifier si le fichier est valide
-  bool get isValid {
-    return size > 0 && File(path).existsSync();
-  }
+
 }
