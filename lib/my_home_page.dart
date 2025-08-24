@@ -87,11 +87,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<bool> _checkPermission() async {
-    final status = await Permission.microphone.request();
-    if (status.isGranted) {
-      return true;
-    } else {
-      return false;
-    }
+    AudioRecorder recorder = AudioRecorder();
+    return await recorder.hasPermission();
   }
 }
