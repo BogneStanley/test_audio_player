@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import 'package:test_audio_player/controllers/recoder_controller.dart';
@@ -87,7 +88,17 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<bool> _checkPermission() async {
-    AudioRecorder recorder = AudioRecorder();
-    return await recorder.hasPermission();
+    if (Platform.isIOS) {
+      // Sur iOS, utiliser permission_handler
+      PermissionStatus status = await Permission.microphone.status;
+      if (status.isDenied) {
+        status = await Permission.microphone.request();
+      }
+      return status.isGranted;
+    } else {
+      // Sur Android, utiliser record
+      AudioRecorder recorder = AudioRecorder();
+      return await recorder.hasPermission();
+    }
   }
 }
