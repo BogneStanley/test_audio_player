@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -51,3 +53,17 @@ class RecorderController {
 }
 
 enum RecorderState { recording, paused }
+
+class AudioFile {
+  final String path;
+  final double size;
+  final String name;
+  final String extension;
+
+  AudioFile({required this.path, required this.size, required this.name, required this.extension,});
+
+  factory AudioFile.fromPath(String path) {
+    final file = File(path);
+    return AudioFile(path: path, size: file.lengthSync() / (1024 * 1024), name: file.path.split('/').last, extension: file.path.split('.').last);
+  }
+}

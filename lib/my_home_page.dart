@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
+import 'package:test_audio_player/controllers/recoder_controller.dart';
+import 'package:test_audio_player/player_widget.dart';
 import 'package:test_audio_player/recorder_widget.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -15,7 +17,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final List<String> _audioList = [];
+  final List<AudioFile> _audioList = [];
 
   bool _isRecording = false;
 
@@ -31,20 +33,26 @@ class _MyHomePageState extends State<MyHomePage> {
             child: ListView.builder(
               itemCount: _audioList.length,
               itemBuilder: (context, index) {
-                return Text(_audioList[index]);
+                return ListTile(
+                  title: PlayerWidget(audioFile: _audioList[index]),
+                  subtitle: Text('${_audioList[index].size} Mo'),
+                  leading: IconButton(
+                    onPressed: () {
+                      _audioList.removeAt(index);
+                      setState(() {});
+                    },
+                    icon: Icon(Icons.delete),
+                  ),
+                );
               },
             ),
           ),
           if (_isRecording)
           RecorderWidget(
             onSend: (value) {
-              File file = File(value);
-              print(file.path);
-              double tailleMb = file.lengthSync() / (1024 * 1024);
-              print('Taille du fichier : ${tailleMb.toStringAsFixed(2)} Mo');
-              
+              AudioFile audioFile = AudioFile.fromPath(value);
               setState(() {
-                _audioList.add(value);
+                _audioList.add(audioFile);
                 _isRecording = false;
               });
             },
