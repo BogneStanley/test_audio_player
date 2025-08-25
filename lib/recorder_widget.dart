@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:test_audio_player/controllers/recoder_controller.dart';
 
 class RecorderWidget extends StatefulWidget {
-  const RecorderWidget({super.key, required this.onSend, required this.onStop});
+  const RecorderWidget({
+    super.key, 
+    required this.onSend, 
+    required this.onStop,
+    this.selectedEncoder,
+  });
   final Function(String) onSend;
   final Function() onStop;
+  final String? selectedEncoder;
 
   @override
   State<RecorderWidget> createState() => _RecorderWidgetState();
@@ -19,7 +25,7 @@ class _RecorderWidgetState extends State<RecorderWidget> {
     _recorderController = RecorderController(setState: () {
       setState(() {});
     });
-    _recorderController.init();
+    _recorderController.init(selectedEncoder: widget.selectedEncoder);
   }
   @override
   Widget build(BuildContext context) {

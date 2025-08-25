@@ -21,13 +21,16 @@ class _MyHomePageState extends State<MyHomePage> {
   final List<AudioFile> _audioList = [];
 
   bool _isRecording = false;
+  String _selectedEncoder = 'aacLc'; // Encodeur par défaut
+
+  // Liste des encodeurs disponibles avec leurs descriptions
+  final Map<String, String> _availableEncoders =
+      Map.fromEntries(configs.map((config) => MapEntry(config['key']!, config['description']!)));
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
+      appBar: AppBar(title: Text(widget.title)),
       body: Column(
         children: [
           Expanded(
@@ -49,38 +52,71 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
           if (_isRecording)
-          RecorderWidget(
-            onSend: (value) {
-              AudioFile audioFile = AudioFile.fromPath(value);
-              setState(() {
-                _audioList.add(audioFile);
-                _isRecording = false;
-              });
-            },
-            onStop: () {
-              setState(() {
-                _isRecording = false;
-              });
-            },
-          ),
-          if (!_isRecording)
-            ElevatedButton(
-              onPressed: () {
-                _checkPermission().then((value) {
-                  if (!value) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Permission denied'),
-                      ),
-                    );
-                    return;
-                  }
-                  setState(() {
-                    _isRecording = true;
-                  });
+            RecorderWidget(
+              selectedEncoder: _selectedEncoder,
+              onSend: (value) {
+                AudioFile audioFile = AudioFile.fromPath(value);
+                setState(() {
+                  _audioList.add(audioFile);
+                  _isRecording = false;
                 });
               },
-              child: Text('Start Recording'),
+              onStop: () {
+                setState(() {
+                  _isRecording = false;
+                });
+              },
+            ),
+          if (!_isRecording)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedEncoder,
+                      decoration: InputDecoration(
+                        labelText: 'Format d\'enregistrement',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      items: _availableEncoders.entries.map((entry) {
+                        return DropdownMenuItem<String>(
+                          value: entry.key,
+                          child: Text(entry.value),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedEncoder = newValue;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      _checkPermission().then((value) {
+                        if (!value) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Permission denied')),
+                          );
+                          return;
+                        }
+                        setState(() {
+                          _isRecording = true;
+                        });
+                      });
+                    },
+                    child: Text('Start Recording'),
+                  ),
+                ],
+              ),
             ),
         ],
       ),
@@ -92,38 +128,40 @@ class _MyHomePageState extends State<MyHomePage> {
       // Sur iOS, utiliser permission_handler
       PermissionStatus status = await Permission.microphone.status;
       print('Status initial: $status');
-      
+
       if (status.isDenied) {
         status = await Permission.microphone.request();
         print('Status après demande: $status');
       }
-      
+
       if (status.isPermanentlyDenied) {
         // La permission est refusée de manière permanente, rediriger vers les paramètres
-        bool shouldShowSettings = await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Permission requise'),
-              content: Text(
-                'L\'accès au microphone est nécessaire pour enregistrer de l\'audio. '
-                'Veuillez l\'activer dans les paramètres de l\'application.'
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('Annuler'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: Text('Paramètres'),
-                ),
-              ],
-            );
-          },
-        ) ?? false;
-        
+        bool shouldShowSettings =
+            await showDialog<bool>(
+              context: context,
+              barrierDismissible: false,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text('Permission requise'),
+                  content: Text(
+                    'L\'accès au microphone est nécessaire pour enregistrer de l\'audio. '
+                    'Veuillez l\'activer dans les paramètres de l\'application.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: Text('Annuler'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: Text('Paramètres'),
+                    ),
+                  ],
+                );
+              },
+            ) ??
+            false;
+
         if (shouldShowSettings) {
           await openAppSettings();
           // Vérifier à nouveau la permission après le retour des paramètres
@@ -131,49 +169,51 @@ class _MyHomePageState extends State<MyHomePage> {
           print('Status après retour des paramètres: $status');
         }
       }
-      
+
       return status.isGranted;
     } else {
       // Sur Android, utiliser record
       AudioRecorder recorder = AudioRecorder();
       bool hasPermission = await recorder.hasPermission();
-      
+
       if (!hasPermission) {
         // Essayer de demander la permission via permission_handler sur Android aussi
         PermissionStatus status = await Permission.microphone.status;
         print('Status Android: $status');
-        
+
         if (status.isDenied) {
           status = await Permission.microphone.request();
           print('Status Android après demande: $status');
         }
-        
+
         if (status.isPermanentlyDenied) {
           // La permission est refusée de manière permanente, rediriger vers les paramètres
-          bool shouldShowSettings = await showDialog<bool>(
-            context: context,
-            barrierDismissible: false,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('Permission requise'),
-                content: Text(
-                  'L\'accès au microphone est nécessaire pour enregistrer de l\'audio. '
-                  'Veuillez l\'activer dans les paramètres de l\'application.'
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: Text('Annuler'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: Text('Paramètres'),
-                  ),
-                ],
-              );
-            },
-          ) ?? false;
-          
+          bool shouldShowSettings =
+              await showDialog<bool>(
+                context: context,
+                barrierDismissible: false,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: Text('Permission requise'),
+                    content: Text(
+                      'L\'accès au microphone est nécessaire pour enregistrer de l\'audio. '
+                      'Veuillez l\'activer dans les paramètres de l\'application.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: Text('Annuler'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: Text('Paramètres'),
+                      ),
+                    ],
+                  );
+                },
+              ) ??
+              false;
+
           if (shouldShowSettings) {
             await openAppSettings();
             // Vérifier à nouveau la permission après le retour des paramètres
@@ -181,10 +221,10 @@ class _MyHomePageState extends State<MyHomePage> {
             print('Status Android après retour des paramètres: $status');
           }
         }
-        
+
         hasPermission = status.isGranted;
       }
-      
+
       return hasPermission;
     }
   }
