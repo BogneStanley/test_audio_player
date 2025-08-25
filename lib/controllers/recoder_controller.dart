@@ -79,69 +79,8 @@ class RecorderController {
     
     // Liste des configurations à essayer sur iOS - toutes les options disponibles
     final List<Map<String, dynamic>> configs = [
-      // Configurations PCM (les plus compatibles)
-      {
-        'sampleRate': 44100,
-        'bitRate': 705600,
-        'encoder': AudioEncoder.pcm16bits,
-        'extension': 'pcm',
-        'description': 'PCM 16-bit 44.1kHz'
-      },
-      {
-        'sampleRate': 22050,
-        'bitRate': 352800,
-        'encoder': AudioEncoder.pcm16bits,
-        'extension': 'pcm',
-        'description': 'PCM 16-bit 22.05kHz'
-      },
-      {
-        'sampleRate': 16000,
-        'bitRate': 256000,
-        'encoder': AudioEncoder.pcm16bits,
-        'extension': 'pcm',
-        'description': 'PCM 16-bit 16kHz'
-      },
-      {
-        'sampleRate': 8000,
-        'bitRate': 128000,
-        'encoder': AudioEncoder.pcm16bits,
-        'extension': 'pcm',
-        'description': 'PCM 16-bit 8kHz'
-      },
-      
-      // Configuration WAV (Waveform Audio avec headers)
-      {
-        'sampleRate': 44100,
-        'bitRate': 705600,
-        'encoder': AudioEncoder.wav,
-        'extension': 'wav',
-        'description': 'WAV 44.1kHz'
-      },
-      {
-        'sampleRate': 22050,
-        'bitRate': 352800,
-        'encoder': AudioEncoder.wav,
-        'extension': 'wav',
-        'description': 'WAV 22.05kHz'
-      },
-      
-      // Configuration FLAC (Free Lossless Audio Codec)
-      {
-        'sampleRate': 44100,
-        'bitRate': 128000,
-        'encoder': AudioEncoder.flac,
-        'extension': 'flac',
-        'description': 'FLAC 44.1kHz'
-      },
-      {
-        'sampleRate': 22050,
-        'bitRate': 64000,
-        'encoder': AudioEncoder.flac,
-        'extension': 'flac',
-        'description': 'FLAC 22.05kHz'
-      },
-      
       // Configuration Opus (très efficace, supporté sur iOS 11+)
+      // Good
       {
         'sampleRate': 48000,
         'bitRate': 64000,
@@ -149,6 +88,7 @@ class RecorderController {
         'extension': 'opus',
         'description': 'Opus 48kHz'
       },
+      // Good
       {
         'sampleRate': 24000,
         'bitRate': 32000,
@@ -158,6 +98,7 @@ class RecorderController {
       },
       
       // Configuration AAC (essayer malgré les problèmes précédents)
+      // Good
       {
         'sampleRate': 44100,
         'bitRate': 128000,
@@ -165,6 +106,7 @@ class RecorderController {
         'extension': 'm4a',
         'description': 'AAC-LC 44.1kHz'
       },
+      // Good
       {
         'sampleRate': 22050,
         'bitRate': 64000,
@@ -174,6 +116,7 @@ class RecorderController {
       },
       
       // Configuration AAC Enhanced Low Delay
+      // Good
       {
         'sampleRate': 44100,
         'bitRate': 128000,
@@ -183,6 +126,7 @@ class RecorderController {
       },
       
       // Configuration AAC High Efficiency
+      // Good
       {
         'sampleRate': 44100,
         'bitRate': 64000,
@@ -192,6 +136,7 @@ class RecorderController {
       },
       
       // Configuration AMR Narrow Band (8kHz requis)
+      // Good
       {
         'sampleRate': 8000,
         'bitRate': 12800,
@@ -207,6 +152,14 @@ class RecorderController {
         'encoder': AudioEncoder.amrWb,
         'extension': '3gp',
         'description': 'AMR-WB 16kHz'
+      },
+
+      {
+        'sampleRate': 22050,
+        'bitRate': 352800,
+        'encoder': AudioEncoder.wav,
+        'extension': 'wav',
+        'description': 'WAV 22.05kHz'
       },
     ];
     
@@ -233,8 +186,13 @@ class RecorderController {
         _state = RecorderState.recording;
         setState();
         if (await _recorder.isRecording()) {
+          print('------------------------------------------------------------------------------');
           print('Enregistrement démarré avec succès: ${config['description']}');
           print('Fichier: $_path');
+          print('Fichier: ${config['description']}');
+          print('Fichier: ${config['extension']}');
+          print('Fichier: ${config['encoder']}');
+          print('------------------------------------------------------------------------------');
           return; // Succès, sortir de la boucle
         } else {
           print('Enregistrement échoué: ${config['description']}');
