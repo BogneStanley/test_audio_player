@@ -32,8 +32,7 @@ class PlayerController {
 
   Future<void> play(String path) async {
     try {
-    await _player.play(UrlSource(path));
-      
+      await _player.play(DeviceFileSource(path));
     } catch (e) {
       print(e);
     }

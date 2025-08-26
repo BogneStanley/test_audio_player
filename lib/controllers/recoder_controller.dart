@@ -3,110 +3,35 @@ import 'dart:io';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 
-    final List<Map<String, dynamic>> configs = [
-     
-     
-      
-      {
-        "key": "opus",
-        'sampleRate': 48000,
-        'bitRate': 64000,
-        'encoder': AudioEncoder.opus,
-        'extension': 'opus',
-        'description': 'Opus 48kHz'
-      },
-      // Good
-      {
-        "key": "opus2",
-        'sampleRate': 24000,
-        'bitRate': 32000,
-        'encoder': AudioEncoder.opus,
-        'extension': 'opus',
-        'description': 'Opus 24kHz'
-      },
-      
-      // Configuration AAC (essayer malgré les problèmes précédents)
-      // Good
-      {
-        "key": "aacLc",
-        'sampleRate': 44100,
-        'bitRate': 128000,
-        'encoder': AudioEncoder.aacLc,
-        'extension': 'm4a',
-        'description': 'AAC-LC 44.1kHz'
-      },
-      // Good
-      {
-        "key": "aacLc2",
-        'sampleRate': 22050,
-        'bitRate': 64000,
-        'encoder': AudioEncoder.aacLc,
-        'extension': 'm4a',
-        'description': 'AAC-LC 22.05kHz'
-      },
-      
-      // Configuration AAC Enhanced Low Delay
-      // Good
-      {
-        "key": "aacEld",
-        'sampleRate': 44100,
-        'bitRate': 128000,
-        'encoder': AudioEncoder.aacEld,
-        'extension': 'm4a',
-        'description': 'AAC-ELD 44.1kHz'
-      },
-      
-      // Configuration AAC High Efficiency
-      // Good
-      {
-        "key": "aacHe",
-        'sampleRate': 44100,
-        'bitRate': 64000,
-        'encoder': AudioEncoder.aacHe,
-        'extension': 'm4a',
-        'description': 'AAC-HE 44.1kHz'
-      },
-      
-      // Configuration AMR Narrow Band (8kHz requis)
-      // Good
-      {
-        "key": "amrNb",
-        'sampleRate': 8000,
-        'bitRate': 12800,
-        'encoder': AudioEncoder.amrNb,
-        'extension': '3gp',
-        'description': 'AMR-NB 8kHz'
-      },
-      
-      // Configuration AMR Wide Band (16kHz requis)
-      {
-        "key": "amrWb",
-        'sampleRate': 16000,
-        'bitRate': 23800,
-        'encoder': AudioEncoder.amrWb,
-        'extension': '3gp',
-        'description': 'AMR-WB 16kHz'
-      },
+final List<Map<String, dynamic>> configs = [
+  // AAC-LC (format .m4a) - Standard Apple, bonne qualité
+  {
+    "key": "aacLc",
+    'sampleRate': 44100,
+    'bitRate': 128000,
+    'encoder': AudioEncoder.aacLc,
+    'extension': 'm4a',
+    'description': 'AAC-LC 44.1kHz (Recommandé)'
+  },
+  // Opus (format .opus) - Moderne et efficace
+  {
+    "key": "opus",
+    'sampleRate': 48000,
+    'bitRate': 64000,
+    'encoder': AudioEncoder.opus,
+    'extension': 'opus',
+    'description': 'Opus 48kHz'
+  },
+  // WAV (format .wav) - Non compressé, haute qualité, fichiers lourds
+  {
+    "key": "wav",
+    'sampleRate': 44100,
+    'encoder': AudioEncoder.wav,
+    'extension': 'wav',
+    'description': 'WAV 44.1kHz (Haute Qualité)'
+  },
+];
 
-       {
-        "key": "wav",
-        'sampleRate': 44100,
-        'encoder': AudioEncoder.wav,
-        'extension': 'wav',
-        'description': 'WAV 44.1kHz'
-      },
-      
-      
-
-      {
-        "key": "wav2",
-        'sampleRate': 22050,
-        'encoder': AudioEncoder.wav,
-        'extension': 'wav',
-        'description': 'WAV 22.05kHz'
-      },
-    ];
-    
 
 class RecorderController {
   RecorderState _state = RecorderState.recording;

@@ -75,6 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _selectedEncoder,
+                      isExpanded: true, // Permet au texte de se comporter correctement à l'intérieur
                       decoration: InputDecoration(
                         labelText: 'Format d\'enregistrement',
                         border: OutlineInputBorder(),
@@ -86,7 +87,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       items: _availableEncoders.entries.map((entry) {
                         return DropdownMenuItem<String>(
                           value: entry.key,
-                          child: Text(entry.value),
+                          child: Text(
+                            entry.value,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         );
                       }).toList(),
                       onChanged: (String? newValue) {
@@ -124,108 +128,53 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<bool> _checkPermission() async {
-    if (Platform.isIOS) {
-      // Sur iOS, utiliser permission_handler
-      PermissionStatus status = await Permission.microphone.status;
-      print('Status initial: $status');
+    // Demander la permission directement.
+    // request() vérifie d'abord le statut. S'il est 'denied', il demande.
+    // S'il est 'permanentlyDenied', il ne fait rien et renvoie le statut.
+    PermissionStatus status = await Permission.microphone.request();
+    print('Status de la permission microphone: $status');
 
-      if (status.isDenied) {
-        status = await Permission.microphone.request();
-        print('Status après demande: $status');
-      }
-
-      if (status.isPermanentlyDenied) {
-        // La permission est refusée de manière permanente, rediriger vers les paramètres
-        bool shouldShowSettings =
-            await showDialog<bool>(
-              context: context,
-              barrierDismissible: false,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: Text('Permission requise'),
-                  content: Text(
-                    'L\'accès au microphone est nécessaire pour enregistrer de l\'audio. '
-                    'Veuillez l\'activer dans les paramètres de l\'application.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: Text('Annuler'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: Text('Paramètres'),
-                    ),
-                  ],
-                );
-              },
-            ) ??
-            false;
-
-        if (shouldShowSettings) {
-          await openAppSettings();
-          // Vérifier à nouveau la permission après le retour des paramètres
-          status = await Permission.microphone.status;
-          print('Status après retour des paramètres: $status');
-        }
-      }
-
-      return status.isGranted;
-    } else {
-      // Sur Android, utiliser record
-      AudioRecorder recorder = AudioRecorder();
-      bool hasPermission = await recorder.hasPermission();
-
-      if (!hasPermission) {
-        // Essayer de demander la permission via permission_handler sur Android aussi
-        PermissionStatus status = await Permission.microphone.status;
-        print('Status Android: $status');
-
-        if (status.isDenied) {
-          status = await Permission.microphone.request();
-          print('Status Android après demande: $status');
-        }
-
-        if (status.isPermanentlyDenied) {
-          // La permission est refusée de manière permanente, rediriger vers les paramètres
-          bool shouldShowSettings =
-              await showDialog<bool>(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: Text('Permission requise'),
-                    content: Text(
-                      'L\'accès au microphone est nécessaire pour enregistrer de l\'audio. '
-                      'Veuillez l\'activer dans les paramètres de l\'application.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: Text('Annuler'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        child: Text('Paramètres'),
-                      ),
-                    ],
-                  );
-                },
-              ) ??
-              false;
-
-          if (shouldShowSettings) {
-            await openAppSettings();
-            // Vérifier à nouveau la permission après le retour des paramètres
-            status = await Permission.microphone.status;
-            print('Status Android après retour des paramètres: $status');
-          }
-        }
-
-        hasPermission = status.isGranted;
-      }
-
-      return hasPermission;
+    if (status.isGranted) {
+      return true;
     }
+
+    // Si la permission est refusée de façon permanente (ou restreinte),
+    // on propose à l'utilisateur d'aller dans les paramètres.
+    if (status.isPermanentlyDenied || status.isRestricted) {
+      bool shouldShowSettings = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('Permission requise'),
+                content: Text(
+                  'L\'accès au microphone est nécessaire pour enregistrer de l\'audio. '
+                  'Veuillez l\'activer dans les paramètres de l\'application.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text('Annuler'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: Text('Paramètres'),
+                  ),
+                ],
+              );
+            },
+          ) ??
+          false;
+
+      if (shouldShowSettings) {
+        await openAppSettings();
+        // On revérifie le statut après le retour des paramètres
+        status = await Permission.microphone.status;
+        print('Nouveau statut après retour des paramètres: $status');
+      }
+    }
+
+    // On retourne le statut final.
+    return status.isGranted;
   }
 }
